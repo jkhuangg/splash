@@ -1,0 +1,74 @@
+--- 
+title: "title1" 
+author: "Jake Huang" 
+date: "01/03/2021" 
+output: html_document 
+runtime: shiny 
+---
+```{r context='setup',include=FALSE, cache=FALSE}
+library(shiny)
+library(h2o)
+  
+```
+
+```{r echo=FALSE}
+wellPanel(style = "background: #FFF;",
+    h4('Please enter the following information.'),
+    flowLayout(
+	selectInput("clinical_tstage", "clinical_tstage", 
+		c(NA, "1", "2a", "2b", "2c", "3"), 
+		selected=NA), 
+	selectInput("grade_group", "grade_group", 
+		c(NA, "3+3", "3+4", "4+3", "8", "9-10"), 
+		selected=NA), 
+	numericInput("age", "age", value=NA), 
+	numericInput("psa", "psa", value=NA), 
+	numericInput("poscores", "poscores", value=NA), 
+	numericInput("negcores", "negcores", value=NA)
+	),
+  	br(),
+  	actionButton('tx_start','Calculate')
+  )
+
+  conditionalPanel('input.tx_start>0',
+                   wellPanel(id='tx_results',style = "background: #FFF;",
+                   h3('H2O output: '),
+                   h5(dataTableOutput('pred_score'))
+                   ))
+
+  # Reactive function to calculate h2o score
+  calculate_h2o = reactive({
+  
+	# assign variables
+	clinical_tstage = input$clinical_tstage
+	grade_group = input$grade_group
+	age = as.numeric(input$age)
+	psa = as.numeric(input$psa)
+	poscores = as.numeric(input$poscores)
+	negcores = as.numeric(input$negcores)
+
+  	# create data frame
+  	x <- data.frame(
+			clinical_tstage,
+			grade_group,
+			age,
+			psa,
+			poscores,
+			negcores)
+
+  	# call mojo
+  	pred_rf <- h2o.mojo_predict_df(frame=x,
+  	                               mojo_zip_path="h2o_lni_glm.zip",
+  	                               genmodel_jar_path='h2o-genmodel.jar',
+  	                               verbose = F)
+  	pred_rf
+})
+
+  output$pred_score = renderDataTable(calculate_h2o(),
+                                      options=list(paging=FALSE,
+                                                   searching=FALSE,
+                                                   info=FALSE,
+                                                   scrollX=TRUE
+                                      ))
+  
+```

@@ -1,0 +1,259 @@
+#' @export
+splash <- function(mojo_fn,
+                   path,
+                   output_fn=NULL,
+                   title=NULL,
+                   author=NULL,
+                   date=NULL,
+                   output=NULL,
+                   runtime=NULL) {
+  # write down path to the mojo file ***
+  modelfile = mojo_fn
+
+  # set current file path
+  setwd(path)
+
+  fn="index.Rmd"
+  if (!is.null(output_fn)) { fn=output_fn }
+
+  # YAML information
+  title_file = title
+  author_file = author
+  date_file = date
+  runtime_file = runtime
+
+  # if no specified runtime, then shiny is default
+  if (is.null(runtime)) {
+    runtime_file="shiny"
+  }
+
+  # Fill in libraries necessary for your h2o code:
+  library_input=
+  "library(shiny)\nlibrary(h2o)
+  "
+  ### WRITE YAML TO FILE
+  yaml_info=paste(
+  "---",
+  "\ntitle:", shQuote(title_file),
+  "\nauthor:", shQuote(author_file),
+  "\ndate:", shQuote(date_file),
+  "\noutput:", output,
+  "\nruntime:", runtime_file,
+  "\n---")
+
+  write(yaml_info, file=fn)
+  # Writing libraries
+  write("```{r context='setup',include=FALSE, cache=FALSE}", file=fn, append=TRUE)
+  write(library_input, file=fn, append=TRUE)
+  write("```", file=fn, append=TRUE)
+  # Now is start of r code:
+  write("\n```{r echo=FALSE}", file=fn, append=TRUE)
+
+  ### Header
+  data =
+  "wellPanel(style = \"background: #FFF;\",
+    h4('Please enter the following information.'),
+    flowLayout("
+
+  write(data, file=fn, append=TRUE)
+
+
+  ### GETTING NAMES AND TYPES OF EACH H2O OBJ COLUMN
+  # YANK the domain info out of model.ini
+  unzip(modelfile, files="model.ini")
+  f = ini::read.ini("model.ini")
+  tot_collen = as.integer(f$info$n_columns) - 1
+  tot_domain = as.integer(f$info$n_domains)
+  x = readLines("model.ini")
+  v = numeric(0)
+
+  num = 1
+  colname = c()
+  while(!is.na(x[num])) {
+    y = x[num]
+    if (y == "[columns]") {
+      num = num + 1
+      for (i in 1:tot_collen) {
+        colname=c(colname, x[num])
+        num = num + 1
+      }
+      # minus the extra line here to avoid going one line too far
+      # (look at num + 1 at the end of this entire loop)
+      num = num - 1
+    } else if (y == "[domains]") {
+      num = num + 1
+      for (i in 1:tot_domain) {
+        line = x[num]
+        colnum = as.numeric(strsplit(line, split=":")[[1]][1])
+        v = c(v, colnum+1)
+        num = num + 1
+      }
+      # minus the extra line here to avoid going one line too far
+      # (look at num + 1 at the end of this entire loop)
+      num = num - 1
+    }
+    num = num + 1
+  }
+
+  # create list of column types
+  coltype = c()
+  for (i in 1:tot_collen) { coltype = c(coltype, "Numeric") }
+  for (i in v) { coltype[i] = "Enum" }
+
+  # unzip the domain files
+  dfl = c()
+  en_collen = length(v) - 1
+  for (i in 0:en_collen) {
+    domain_file=sprintf("domains/d%03d.txt", i)
+    dfl=c(dfl, domain_file)
+    unzip(modelfile, files=domain_file)
+  }
+
+  # this function takes in a column num of an enum col and returns
+  # a vector of its options
+  enum2dom = function(colnum) {
+    idx = toString(colnum)
+    domFile = dfl[[idx]]
+    eopt = readLines(domFile)
+    eopt
+  }
+
+  # maps enum col num. to its domain file
+  # maps col name to its type
+  names(dfl) = v
+  names(coltype) = colname
+
+  # find a way to mark the last column so we don't
+  # add  comma at the end of it
+  collen = length(colname)
+
+  # this function takes all the possible inputs for 'Enum'
+  # and puts them into a string
+  eopt2str = function(eopt) {
+    sz = length(eopt)
+    num = 1
+    str = ""
+
+    for (i in eopt) {
+      str = paste0(str, shQuote(i))
+      # add comma if not end of vector
+      if (num < sz) { str = paste0(str, ", ") }
+      num = num + 1
+    }
+
+    str = trimws(str)
+  }
+
+  ### MAIN LOOP
+  idx = 1
+  for (cn in colname) {
+    # get the type of col
+    ct = coltype[[cn]]
+
+    # data input
+    id = shQuote(cn)
+    cn_quoted = shQuote(cn)
+
+    if (ct == "Numeric") {
+      # fill in string for numericInput
+      data = paste0("\tnumericInput(", id, ", ", cn_quoted, ", value=NA)")
+
+    } else if (ct == "Enum") {
+      # stringfy Enum options
+      x = enum2dom(idx)
+      opt = eopt2str(x)
+
+      # fill in string for selectInput
+      data = paste0("\tselectInput(", id, ", ", cn_quoted, ", ",
+                    "\n\t\tc(NA, ", opt, "), ",
+                    "\n\t\tselected=NA", ")")
+    }
+
+    if (idx < collen) { data = paste0(data, ", ") }
+
+    # write to file
+    write(data, file=fn, append = TRUE)
+    idx = idx + 1
+  }
+
+  ### End
+  data =
+  "\t),
+  \tbr(),
+  \tactionButton('tx_start','Calculate')
+  )"
+
+  write(data, file=fn, append=TRUE)
+
+  ### H2O OUTPUT
+  data =
+  "
+  conditionalPanel('input.tx_start>0',
+                   wellPanel(id='tx_results',style = \"background: #FFF;\",
+                   h3('H2O output: '),
+                   h5(dataTableOutput('pred_score'))
+                   ))"
+  write(data, file=fn, append=TRUE)
+
+  ### H2O CALCULATION
+  data =
+  "
+  # Reactive function to calculate h2o score
+  calculate_h2o = reactive({
+  \n\t# assign variables"
+  write(data, file=fn, append=TRUE)
+
+  # assign variables
+  for (cn in colname) {
+    data = paste0("\t", cn, " = ")
+    ct = coltype[[cn]]
+    if (ct == "Numeric") { data = paste0(data, "as.numeric(input$", cn, ")") }
+    else if (ct == "Enum") { data = paste0(data, "input$", cn) }
+    write(data, file=fn, append=TRUE)
+  }
+
+  data =
+  "
+  \t# create data frame
+  \tx <- data.frame("
+  write(data, file=fn, append=TRUE)
+
+  num = 1
+  for (cn in colname) {
+    sz = length(colname)
+    tabs = "\t\t\t"
+    if (num < sz) { write(paste0(tabs, cn, ","), file=fn, append=TRUE) }
+    else { write(paste0(tabs, cn, ")"), file=fn, append=TRUE) }
+    num = num + 1
+  }
+
+  data = paste0(
+  "
+  \t# call mojo
+  \tpred_rf <- h2o.mojo_predict_df(frame=x,
+  \t                               mojo_zip_path=", shQuote(modelfile), ",
+  \t                               genmodel_jar_path='h2o-genmodel.jar',
+  \t                               verbose = F)
+  \tpred_rf")
+
+  write(data, file=fn, append=TRUE)
+  write("})", file=fn, append=TRUE)
+
+  ### WRITE FUNCTION TO OUTPUT H2O RESULT
+  data =
+  "
+  output$pred_score = renderDataTable(calculate_h2o(),
+                                      options=list(paging=FALSE,
+                                                   searching=FALSE,
+                                                   info=FALSE,
+                                                   scrollX=TRUE
+                                      ))
+  "
+
+  write(data, file=fn, append=TRUE)
+  write("```", file=fn, append=TRUE)
+
+  # some house cleaning
+  unlink("domains", recursive=TRUE)
+  unlink("model.ini")
+}
