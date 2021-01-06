@@ -1,7 +1,7 @@
 --- 
-title: "title1" 
-author: "Jake Huang" 
-date: "01/03/2021" 
+title: "H2O prostate.csv Demo" 
+author: "ML4LHS" 
+date: "01/05/2021" 
 output: html_document 
 runtime: shiny 
 ---
@@ -15,16 +15,10 @@ library(h2o)
 wellPanel(style = "background: #FFF;",
     h4('Please enter the following information.'),
     flowLayout(
-	selectInput("clinical_tstage", "clinical_tstage", 
-		c(NA, "1", "2a", "2b", "2c", "3"), 
-		selected=NA), 
-	selectInput("grade_group", "grade_group", 
-		c(NA, "3+3", "3+4", "4+3", "8", "9-10"), 
-		selected=NA), 
-	numericInput("age", "age", value=NA), 
-	numericInput("psa", "psa", value=NA), 
-	numericInput("poscores", "poscores", value=NA), 
-	numericInput("negcores", "negcores", value=NA)
+	numericInput("AGE", "AGE", value=NA), 
+	numericInput("RACE", "RACE", value=NA), 
+	numericInput("PSA", "PSA", value=NA), 
+	numericInput("GLEASON", "GLEASON", value=NA)
 	),
   	br(),
   	actionButton('tx_start','Calculate')
@@ -40,25 +34,21 @@ wellPanel(style = "background: #FFF;",
   calculate_h2o = reactive({
   
 	# assign variables
-	clinical_tstage = input$clinical_tstage
-	grade_group = input$grade_group
-	age = as.numeric(input$age)
-	psa = as.numeric(input$psa)
-	poscores = as.numeric(input$poscores)
-	negcores = as.numeric(input$negcores)
+	AGE = as.numeric(input$AGE)
+	RACE = as.numeric(input$RACE)
+	PSA = as.numeric(input$PSA)
+	GLEASON = as.numeric(input$GLEASON)
 
   	# create data frame
   	x <- data.frame(
-			clinical_tstage,
-			grade_group,
-			age,
-			psa,
-			poscores,
-			negcores)
+			AGE,
+			RACE,
+			PSA,
+			GLEASON)
 
   	# call mojo
   	pred_rf <- h2o.mojo_predict_df(frame=x,
-  	                               mojo_zip_path="h2o_lni_glm.zip",
+  	                               mojo_zip_path="GBM_model_R_1609190771337_5768.zip",
   	                               genmodel_jar_path='h2o-genmodel.jar',
   	                               verbose = F)
   	pred_rf
