@@ -15,12 +15,20 @@ library(h2o)
 wellPanel(style = "background: #FFF;",
     h4('Please enter the following information.'),
     flowLayout(
-	numericInput("AGE", "AGE", value=NA), 
-	selectInput("RACE", "RACE", 
-		c(NA, "0", "1", "2"), 
+	numericInput("age", "age", value=NA), 
+	numericInput("bxgs1", "bxgs1", value=NA), 
+	numericInput("bxgs2", "bxgs2", value=NA), 
+	numericInput("bxgs", "bxgs", value=NA), 
+	numericInput("poscores", "poscores", value=NA), 
+	numericInput("psa", "psa", value=NA), 
+	selectInput("mi", "mi", 
+		c(NA, "No", "Yes"), 
 		selected=NA), 
-	numericInput("PSA", "PSA", value=NA), 
-	numericInput("GLEASON", "GLEASON", value=NA)
+	numericInput("wgt", "wgt", value=NA), 
+	numericInput("totcores", "totcores", value=NA), 
+	selectInput("diab", "diab", 
+		c(NA, "No", "Yes"), 
+		selected=NA)
 	),
   	br(),
   	actionButton('tx_start','Calculate')
@@ -36,21 +44,33 @@ wellPanel(style = "background: #FFF;",
   calculate_h2o = reactive({
   
 	# assign variables
-	AGE = as.numeric(input$AGE)
-	RACE = input$RACE
-	PSA = as.numeric(input$PSA)
-	GLEASON = as.numeric(input$GLEASON)
+	age = as.numeric(input$age)
+	bxgs1 = as.numeric(input$bxgs1)
+	bxgs2 = as.numeric(input$bxgs2)
+	bxgs = as.numeric(input$bxgs)
+	poscores = as.numeric(input$poscores)
+	psa = as.numeric(input$psa)
+	mi = input$mi
+	wgt = as.numeric(input$wgt)
+	totcores = as.numeric(input$totcores)
+	diab = input$diab
 
   	# create data frame
   	x <- data.frame(
-			AGE,
-			RACE,
-			PSA,
-			GLEASON)
+			age,
+			bxgs1,
+			bxgs2,
+			bxgs,
+			poscores,
+			psa,
+			mi,
+			wgt,
+			totcores,
+			diab)
 
   	# call mojo
   	pred_rf <- h2o.mojo_predict_df(frame=x,
-  	                               mojo_zip_path="GBM_model_R_1609190771337_6077.zip",
+  	                               mojo_zip_path="tx_model_nomets_pub.zip",
   	                               genmodel_jar_path='h2o-genmodel.jar',
   	                               verbose = F)
   	pred_rf

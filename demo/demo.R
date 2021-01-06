@@ -25,7 +25,7 @@ modelfile <- h2o.download_mojo(model, path= getwd(), get_genmodel_jar=TRUE)
 # splash(modelfile, curr_wd)
 
 # specifying all the parameters
-splash(mojo_fn=modelfile,
+splash(mojo_fn="tx_model_nomets_pub.zip",
        path=curr_wd,
        output_fn="index.Rmd",
        title="H2O prostate.csv Demo",
