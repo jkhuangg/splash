@@ -1,3 +1,29 @@
+# this function takes in a column num of an enum col and returns
+# a vector of its options
+enum2dom = function(colnum, domain_files) {
+  idx = toString(colnum)
+  domFile = domain_files[[idx]]
+  eopt = readLines(domFile)
+  eopt
+}
+
+# this function takes all the possible inputs for 'Enum'
+# and puts them into a string
+eopt2str = function(eopt) {
+  sz = length(eopt)
+  num = 1
+  str = ""
+  
+  for (i in eopt) {
+    str = paste0(str, shQuote(i))
+    # add comma if not end of vector
+    if (num < sz) { str = paste0(str, ", ") }
+    num = num + 1
+  }
+  
+  str = trimws(str)
+}
+
 #' @export
 splash <- function(mojo_fn,
                    path,
@@ -109,15 +135,6 @@ splash <- function(mojo_fn,
     unzip(modelfile, files=domain_file)
   }
 
-  # this function takes in a column num of an enum col and returns
-  # a vector of its options
-  enum2dom = function(colnum) {
-    idx = toString(colnum)
-    domFile = dfl[[idx]]
-    eopt = readLines(domFile)
-    eopt
-  }
-
   # maps enum col num. to its domain file
   # maps col name to its type
   names(dfl) = v
@@ -126,23 +143,6 @@ splash <- function(mojo_fn,
   # find a way to mark the last column so we don't
   # add  comma at the end of it
   collen = length(colname)
-
-  # this function takes all the possible inputs for 'Enum'
-  # and puts them into a string
-  eopt2str = function(eopt) {
-    sz = length(eopt)
-    num = 1
-    str = ""
-
-    for (i in eopt) {
-      str = paste0(str, shQuote(i))
-      # add comma if not end of vector
-      if (num < sz) { str = paste0(str, ", ") }
-      num = num + 1
-    }
-
-    str = trimws(str)
-  }
 
   ### MAIN LOOP
   idx = 1
@@ -160,7 +160,7 @@ splash <- function(mojo_fn,
 
     } else if (ct == "Enum") {
       # stringfy Enum options
-      x = enum2dom(idx)
+      x = enum2dom(idx, dfl)
       opt = eopt2str(x)
 
       # fill in string for selectInput
