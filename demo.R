@@ -10,6 +10,7 @@ h2o.init(nthreads = -1)
 path <- system.file("extdata", "prostate.csv", package="h2o")
 h2o_df <- h2o.importFile(path)
 h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+h2o_df$RACE = as.factor(h2o_df$RACE)
 model <- h2o.gbm(y = "CAPSULE",
                  x = c("AGE", "RACE", "PSA", "GLEASON"),
                  training_frame = h2o_df,

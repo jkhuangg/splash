@@ -16,7 +16,9 @@ wellPanel(style = "background: #FFF;",
     h4('Please enter the following information.'),
     flowLayout(
 	numericInput("AGE", "AGE", value=NA), 
-	numericInput("RACE", "RACE", value=NA), 
+	selectInput("RACE", "RACE", 
+		c(NA, "0", "1", "2"), 
+		selected=NA), 
 	numericInput("PSA", "PSA", value=NA), 
 	numericInput("GLEASON", "GLEASON", value=NA)
 	),
@@ -35,7 +37,7 @@ wellPanel(style = "background: #FFF;",
   
 	# assign variables
 	AGE = as.numeric(input$AGE)
-	RACE = as.numeric(input$RACE)
+	RACE = input$RACE
 	PSA = as.numeric(input$PSA)
 	GLEASON = as.numeric(input$GLEASON)
 
@@ -48,7 +50,7 @@ wellPanel(style = "background: #FFF;",
 
   	# call mojo
   	pred_rf <- h2o.mojo_predict_df(frame=x,
-  	                               mojo_zip_path="GBM_model_R_1609190771337_5768.zip",
+  	                               mojo_zip_path="GBM_model_R_1609190771337_6077.zip",
   	                               genmodel_jar_path='h2o-genmodel.jar',
   	                               verbose = F)
   	pred_rf
