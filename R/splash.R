@@ -27,31 +27,17 @@ eopt2str = function(eopt) {
 #' @export
 splash <- function(mojo_fn,
                    path,
-                   output_fn=NULL,
+                   output_fn="index.Rmd",
                    title=NULL,
                    author=NULL,
                    date=NULL,
                    output=NULL,
-                   runtime=NULL) {
-  # write down path to the mojo file ***
+                   runtime="shiny") {
+  
+  # set up work dir, path & output file name
   modelfile = mojo_fn
-
-  # set current file path
+  fn = output_fn
   setwd(path)
-
-  fn="index.Rmd"
-  if (!is.null(output_fn)) { fn=output_fn }
-
-  # YAML information
-  title_file = title
-  author_file = author
-  date_file = date
-  runtime_file = runtime
-
-  # if no specified runtime, then shiny is default
-  if (is.null(runtime)) {
-    runtime_file="shiny"
-  }
 
   # Fill in libraries necessary for your h2o code:
   library_input=
@@ -60,11 +46,11 @@ splash <- function(mojo_fn,
   ### WRITE YAML TO FILE
   yaml_info=paste(
   "---",
-  "\ntitle:", shQuote(title_file),
-  "\nauthor:", shQuote(author_file),
-  "\ndate:", shQuote(date_file),
+  "\ntitle:", shQuote(title),
+  "\nauthor:", shQuote(author),
+  "\ndate:", shQuote(date),
   "\noutput:", output,
-  "\nruntime:", runtime_file,
+  "\nruntime:", runtime,
   "\n---")
 
   write(yaml_info, file=fn)
@@ -91,9 +77,9 @@ splash <- function(mojo_fn,
   tot_collen = as.integer(f$info$n_columns) - 1
   tot_domain = as.integer(f$info$n_domains)
   x = readLines("model.ini")
-  v = numeric(0)
 
   num = 1
+  v = numeric(0)
   colname = c()
   while(!is.na(x[num])) {
     y = x[num]
@@ -122,9 +108,9 @@ splash <- function(mojo_fn,
   }
 
   # create list of column types
-  coltype = c()
-  for (i in 1:tot_collen) { coltype = c(coltype, "Numeric") }
-  for (i in v) { coltype[i] = "Enum" }
+  coltype = rep("Numeric", tot_collen)
+  for (i in v)
+    coltype[i] = "Enum"
 
   # unzip the domain files
   dfl = c()
@@ -157,7 +143,6 @@ splash <- function(mojo_fn,
     if (ct == "Numeric") {
       # fill in string for numericInput
       data = paste0("\tnumericInput(", id, ", ", cn_quoted, ", value=NA)")
-
     } else if (ct == "Enum") {
       # stringfy Enum options
       x = enum2dom(idx, dfl)
@@ -169,7 +154,8 @@ splash <- function(mojo_fn,
                     "\n\t\tselected=NA", ")")
     }
 
-    if (idx < collen) { data = paste0(data, ", ") }
+    if (idx < collen) 
+      data = paste0(data, ", ")
 
     # write to file
     write(data, file=fn, append = TRUE)
@@ -207,8 +193,11 @@ splash <- function(mojo_fn,
   for (cn in colname) {
     data = paste0("\t", cn, " = ")
     ct = coltype[[cn]]
-    if (ct == "Numeric") { data = paste0(data, "as.numeric(input$", cn, ")") }
-    else if (ct == "Enum") { data = paste0(data, "input$", cn) }
+    if (ct == "Numeric") { 
+      data = paste0(data, "as.numeric(input$", cn, ")") 
+    } else if (ct == "Enum") { 
+      data = paste0(data, "input$", cn) 
+    }
     write(data, file=fn, append=TRUE)
   }
 
@@ -222,8 +211,11 @@ splash <- function(mojo_fn,
   for (cn in colname) {
     sz = length(colname)
     tabs = "\t\t\t"
-    if (num < sz) { write(paste0(tabs, cn, ","), file=fn, append=TRUE) }
-    else { write(paste0(tabs, cn, ")"), file=fn, append=TRUE) }
+    if (num < sz) { 
+      write(paste0(tabs, cn, ","), file=fn, append=TRUE) 
+    } else { 
+      write(paste0(tabs, cn, ")"), file=fn, append=TRUE) 
+    }
     num = num + 1
   }
 
