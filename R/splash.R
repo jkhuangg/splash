@@ -245,7 +245,21 @@ splash <- function(mojo_fn,
   write(data, file=fn, append=TRUE)
   write("```", file=fn, append=TRUE)
 
+  created_jar = FALSE
+  # create genmodel_jar, if none
+  if (!file.exists("h2o-genmodel.jar")) {
+    h2o::h2o.init()
+    full_mojo_path = paste0(path, "/", mojo_fn)
+    tmp_model = h2o::h2o.import_mojo(full_mojo_path)
+    h2o::h2o.download_mojo(model=tmp_model,
+                           get_genmodel_jar=TRUE)
+    created_jar = TRUE
+  }
+  
   # some house cleaning
   unlink("domains", recursive=TRUE)
   unlink("model.ini")
+  # if we created the tmp file, delete 
+  if (created_jar)
+    unlink(paste0(tmp_model@model_id, ".zip"))
 }

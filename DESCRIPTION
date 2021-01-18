@@ -10,4 +10,5 @@ License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 Imports:
-  ini (>= 3.6.3)
+  ini (>= 3.6.3),
+  h2o (>= 3.30.0.1)
