@@ -245,9 +245,10 @@ splash <- function(mojo_fn,
   write(data, file=fn, append=TRUE)
   write("```", file=fn, append=TRUE)
 
-  created_jar = FALSE
   # create genmodel_jar, if none
-  if (!file.exists("h2o-genmodel.jar")) {
+  created_jar = FALSE
+  full_genmdl_path = paste0(path, "/h2o-genmodel.jar")
+  if (!file.exists(full_genmdl_path)) {
     h2o::h2o.init()
     full_mojo_path = paste0(path, "/", mojo_fn)
     tmp_model = h2o::h2o.import_mojo(full_mojo_path)
