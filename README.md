@@ -41,10 +41,9 @@ splash(mojo_fn=modelfile,
        runtime="shiny"
 )
 ```
-# A screenshot of index.Rmd
 ![Screenshot of splash](screenshot.png)
 
 # Live Demo
-this shiny app lives on: </br>
+This shiny app lives on: </br>
 https://jakehuang.shinyapps.io/splash_prostate_demo/
 
