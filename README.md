@@ -45,4 +45,4 @@ splash(mojo_fn=modelfile,
        runtime="shiny"
 )
 ```
-![Screenshot of splash](splash_screenshot.png)
+![Screenshot of splash](screenshot.png)
