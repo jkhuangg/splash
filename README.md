@@ -45,6 +45,5 @@ splash(mojo_fn=modelfile,
        runtime="shiny"
 )
 ```
-
-Here is a screenshot of the index.Rmd created:
+A screenshot of the index.Rmd created:
 ![Screenshot of splash](screenshot.png)
